@@ -9,12 +9,3 @@ __init__.py: Defines the configuration validation in Python
 .sensor.py (or binary_sensor.py, etc.): Associates the YAML settings with the C++ code
 .my_sensor.h & my_sensor.cpp: The actual logic running on the ESP.
 
-/ (root van je repository)
-├── components/               <-- De hoofdmap voor ESPHome
-│   ├── tda8444/              <-- Map voor de TDA8444 DAC
-│   │   ├── __init__.py       <-- De Python koppeling
-│   │   └── tda8444.h         <-- De C++ logica
-│   └── pcf8591/              <-- Map voor de PCF8591 (indien gewenst)
-│       ├── __init__.py
-│       └── pcf8591.h
-└── velleman_k8000.yaml       <-- Je complete werkende configuratie
