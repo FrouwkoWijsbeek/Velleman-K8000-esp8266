@@ -1,0 +1,190 @@
+esphome:
+  name: velleman-k8000-looplicht
+  friendly_name: Velleman K8000 looplicht
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "EWDVvUQBm3Iu5qGsFAQJnWn0oK+6sOfZ9JPNWHS6pXI="
+
+ota:
+  - platform: esphome
+    password: "7405001244e887601c00f3245fd85559"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Velleman-K8000-Looplicht"
+    password: "Wijsbeek"
+
+captive_portal:
+
+# Example for standard ESP32 (SDA: 21, SCL: 22)
+i2c:
+  sda: GPIO 4
+  scl: GPIO 5
+  scan: true  # <--- This triggers the scanner
+  id: bus_a 
+
+external_components:
+  - source:
+      type: local
+      path: components
+  - source:
+      type: local
+      path: my_components    
+
+
+# Example configuration entry
+pcf8574:
+  - id: 'pcf_uit'
+    address: 0x3A
+    pcf8575: False
+
+  - id: 'pcf_in'
+    address: 0x3B
+    pcf8575: False    
+
+tda8444:
+  id: dac_chip
+  address: 0x21     
+
+web_server:
+  port: 80 
+
+#Loop licht 
+
+# 1. De 16 Uitgangen (Zorg dat dit de enige 'switch:' sectie is!)
+switch:
+  - platform: gpio
+    id: uit1
+    name: "K8000 Uitgang 1"
+    pin: { pcf8574: pcf_uit, number: 0, mode: OUTPUT }
+  - platform: gpio
+    id: uit2
+    name: "K8000 Uitgang 2"
+    pin: { pcf8574: pcf_uit, number: 1, mode: OUTPUT }
+  - platform: gpio
+    id: uit3
+    name: "K8000 Uitgang 3"
+    pin: { pcf8574: pcf_uit, number: 2, mode: OUTPUT }
+  - platform: gpio
+    id: uit4
+    name: "K8000 Uitgang 4"
+    pin: { pcf8574: pcf_uit, number: 3, mode: OUTPUT }
+  - platform: gpio
+    id: uit5
+    name: "K8000 Uitgang 5"
+    pin: { pcf8574: pcf_uit, number: 4, mode: OUTPUT }
+  - platform: gpio
+    id: uit6
+    name: "K8000 Uitgang 6"
+    pin: { pcf8574: pcf_uit, number: 5, mode: OUTPUT }
+  - platform: gpio
+    id: uit7
+    name: "K8000 Uitgang 7"
+    pin: { pcf8574: pcf_uit, number: 6, mode: OUTPUT }
+  - platform: gpio
+    id: uit8
+    name: "K8000 Uitgang 8"
+    pin: { pcf8574: pcf_uit, number: 7, mode: OUTPUT }
+
+  - platform: gpio
+    id: uit9
+    name: "K8000 Uitgang 9"
+    pin: { pcf8574: pcf_in, number: 0, mode: OUTPUT }
+  - platform: gpio
+    id: uit10
+    name: "K8000 Uitgang 10"
+    pin: { pcf8574: pcf_in, number: 1, mode: OUTPUT }
+  - platform: gpio
+    id: uit11
+    name: "K8000 Uitgang 11"
+    pin: { pcf8574: pcf_in, number: 2, mode: OUTPUT }
+  - platform: gpio
+    id: uit12
+    name: "K8000 Uitgang 12"
+    pin: { pcf8574: pcf_in, number: 3, mode: OUTPUT }
+  - platform: gpio
+    id: uit13
+    name: "K8000 Uitgang 13"
+    pin: { pcf8574: pcf_in, number: 4, mode: OUTPUT }
+  - platform: gpio
+    id: uit14
+    name: "K8000 Uitgang 14"
+    pin: { pcf8574: pcf_in, number: 5, mode: OUTPUT }
+  - platform: gpio
+    id: uit15
+    name: "K8000 Uitgang 15"
+    pin: { pcf8574: pcf_in, number: 6, mode: OUTPUT }
+  - platform: gpio
+    id: uit16
+    name: "K8000 Uitgang 16"
+    pin: { pcf8574: pcf_in, number: 7, mode: OUTPUT }
+
+  # Zoek je bestaande template switch en vervang de turn_off_action:
+  - platform: template
+    name: "K8000 Looplicht 16 kanalen"
+    id: loop_knop
+    turn_on_action:
+      - script.execute: looplicht_16
+    turn_off_action:
+      - script.stop: looplicht_16
+      - switch.turn_off: uit1
+      - switch.turn_off: uit2
+      - switch.turn_off: uit3
+      - switch.turn_off: uit4
+      - switch.turn_off: uit5
+      - switch.turn_off: uit6
+      - switch.turn_off: uit7
+      - switch.turn_off: uit8
+      - switch.turn_off: uit9
+      - switch.turn_off: uit10
+      - switch.turn_off: uit11
+      - switch.turn_off: uit12
+      - switch.turn_off: uit13
+      - switch.turn_off: uit14
+      - switch.turn_off: uit15
+      - switch.turn_off: uit16
+
+
+# 3. Het Effect Script
+script:
+  - id: looplicht_16
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: 'return true;'
+          then:
+            - lambda: |-
+                // Definieer de array met auto om de 'switch' naam-conflict te vermijden
+                auto lampjes = std::vector<gpio::GPIOSwitch*>{
+                  id(uit1), id(uit2), id(uit3), id(uit4), id(uit5), id(uit6), id(uit7), id(uit8),
+                  id(uit9), id(uit10), id(uit11), id(uit12), id(uit13), id(uit14), id(uit15), id(uit16)
+                };
+
+                // Heen
+                for (int i = 0; i < 16; i++) {
+                  lampjes[i]->turn_on();
+                  delay(80);
+                  lampjes[i]->turn_off();
+                }
+                // Terug
+                for (int i = 14; i >= 1; i--) {
+                  lampjes[i]->turn_on();
+                  delay(80);
+                  lampjes[i]->turn_off();
+                }
+
+
+
